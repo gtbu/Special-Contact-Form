@@ -326,92 +326,11 @@ namespace Addon\SCF{
 		}
 
 		function create_template(){
-			$t = '<div>'.$this->SCF_LANG['form'].'</div><br/>'."\n";
-			$t.= '<form enctype="multipart/form-data" action="" method="post" name="special_contact_form" class="scf">'."\n";
-			$t.= ' <fieldset>'."\n";
-			//var_export($this->items);
-			foreach ($this->items as $i => $value){
-				if( $value['type']=='radio')
-					$t.= '  <p><b>'.$value['label'].'</b></p>'."\n";
-				else
-					$t.= '  <label for="item'.$i.'"><b>'.$value['label'].'</b>'."\n";
-				$rnr = '    *('.(strpos($value['valid'],'req')===false ? $this->SCF_LANG['recommended']:$this->SCF_LANG['required']).')'."\n";
-				if( $value['type']=='textarea' && $i!=$this->data['id_sendermessage'])
-					$t.= $rnr;
-				switch ($value['type']){
-					case 'input':
-						$t.= '   <input id="item'.$i.'" name="item'.$i.'" type="text" value="" />'."\n";
-					break;
-					case 'checkbox':
-						$t.= '   <input id="item'.$i.'" name="item'.$i.'" type="checkbox" />'."\n";
-					break;
-					case 'radio':
-						if( $value['multi_values']=='')
-							break; //skips wrong field
-						$vs = explode(',', $value['multi_values']);
-						$first = true;
-						foreach ($vs as $j => $str){
-							$t.= '   <label for="item'.$i.'_'.$j.'"><b>'.$str.'</b> <input id="item'.$i.'_'.$j.'" name="item'.$i.'" type="radio" value="'.$str.'"'.($first?' checked="checked"':'').' /> </label><br/>'."\n";
-							if( $first) $first=false;
-						}
-					break;
-					case 'select':
-						$t.= '  <select id="item'.$i.'" name="item'.$i.'">'."\n";
-						if( $value['multi_values']!=''){
-							$vs = explode(',', $value['multi_values']);
-							foreach ($vs as $str){
-								$t.= '    <option value="'.$str.'">'.$str.'</option> '."\n";
-							}
-						}
-						$t.= '   </select>'."\n";
-					break;
-					case 'textarea':
-						$t.= '   <textarea id="item'.$i.'" name="item'.$i.'" '.($i==$this->data['id_sendermessage'] ? $this->data['message_ta_params']:'cols="30" rows="5"').'></textarea>'."\n";
-					break;
-					case 'file':
-						$t.= '    ('.$this->SCF_LANG['max_filesize'].': '.ini_get('upload_max_filesize').'B)'."\n";
-						$t.= '   <input id="item'.$i.'" name="item'.$i.'" type="file" value="" style="margin-right:90px"/>'."\n";
-					break;
-				}
-				if( $value['type']=='input')
-					$t.= $rnr;
-				if( $this->data['validator_errors']==2)
-					$t .= '    <span class="error_strings" id="special_contact_form_item'.$i.'_errorloc"> </span>';
-				if( $value['type']!='radio')
-					$t.= '  </label>'."\n";
-				//$t .= '<br/>';
-			}
-			if( $this->data['sendcopytosender']){
-				$t.= '  <label for="sendcopytosender">'.$this->data['msg_sendcopytosender']."\n";
-				$t.= '   <input id="sendcopytosender" name="sendcopytosender" type="checkbox" /> '."\n";
-				$t.= '  </label>'."\n";
-			}
-			if( $this->data['aspam']=='math'){
-				$t.= '  <label for="check"><b>'.$this->SCF_LANG['antispam'].'</b>'."\n";
-				$t.= '    <span style="float:left">'.$this->SCF_LANG['enter_result'].' [NUMBERS] : </span>'."\n";
-				$t.= '    <input id="check" name="check" type="text" value="" class="scf_input" />'."\n";
-				$t.= '  </label>'."\n";
-			}
 
-			if( $this->data['aspam']=='capt'){
-				$t.= '  <label><b>'.$this->SCF_LANG['antispam'].'</b>'."\n";
-				$t.= '   [CAPTCHA]</label><br/>'."\n";
-			}
-			$t.= '    <input class="scf_submit" name="submitForm" type="submit" value="'.$this->SCF_LANG['send'].'" />'."\n";
-			$t.= '    <input id="url" name="url" type="text" value="" style="display:none" />'."\n";
-			$t.= '    <input id="website" name="website" type="text" value="" style="display:none" />'."\n";
-			if( $this->data['validator_errors']==1){
-				$t.= '    <span class="error_strings" id="special_contact_form_errorloc"> </span>'."\n";
-			}
-			if( $this->data['validator_errors']==2){
-				$t.= '    <span class="error_strings" id="special_contact_form_check_errorloc"> </span>'."\n";
-			}
-			$t.= ' </fieldset>'."\n";
-			$t.= '</form>'."\n";
-			$str= '<'.'?'.'php defined(\'is_running\') or die(\'Not an entry point...\');
-	 ?'.'>'."\n";
+			$t		= $this->GenerateTemplate();
+			$str	= '<'.'?'.'php defined(\'is_running\') or die(\'Not an entry point...\') ?'.'>'."\n";
 			file_put_contents($this->template, $str.$t); // save template
-			message($this->SCF_LANG['template_created'].'<br/><br/>');
+			message($this->SCF_LANG['template_created']);
 		}
 
 		function view_template(){

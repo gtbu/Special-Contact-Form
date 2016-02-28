@@ -16,6 +16,13 @@ class Form{
 	public $items;
 	public $lang		= 'en'; //user interface language
 
+
+	//anti-spam
+	protected $op;
+	protected $n1;
+	protected $n2;
+	protected $disablemathchecking = false;
+
 	function __construct(){
 		global $config, $addonPathCode, $addonPathData;
 
@@ -108,6 +115,11 @@ class Form{
 				,"msg_sendcopytosender" => $this->SCF_LANG['sendcopytosender'] );
 	}
 
+
+	/**
+	 * Display the contact form and process POST submit
+	 *
+	 */
 	function Start(){
 		global $addonPathData;
 
@@ -116,26 +128,46 @@ class Form{
 			echo '<hr/>';
 		}
 
+		echo '<div class="simplecontactform">';
+		echo '<noscript><p>'.($this->data['msg_noscript']).'</p></noscript>';
+
+		if( !empty($_POST) ){
+			$this->Send();
+		}
+
+		$this->Operator();
 		$this->create_form();
 	}
 
 
+	/**
+	 * Display the contact form
+	 * @todo: don't display the form after the sending
+	 *
+	 */
 	function create_form(){
 		global $page;
-		global $addonRelativeData,$addonPathData,$addonPathCode,$addonRelativeCode,$config,$dataDir,$gp_titles,$gp_index,$addonFolderName;
+		global $addonRelativeData, $addonPathData, $addonPathCode, $addonRelativeCode, $config, $dataDir, $gp_titles, $gp_index, $addonFolderName;
 
-		if( !file_exists($this->template)){
-			echo $this->SCF_LANG['template_none'];
-			return;
+		//get the template
+		if( file_exists($this->template) ){
+			$template = $this->getfile($this->template,1);
+		}else{
+			$template = $this->GenerateTemplate();
 		}
 
-		if(  ($this->data['aspam']=='capt') && ($this->keypublic=='' || $this->keyprivate=='') ){
-			$this->data['aspam']='none';
-			echo $this->SCF_LANG['rc_notset'].'<br/>';
+
+		//warn if recaptcha is not set up
+		if( \common::LoggedIn() ){
+			if( ($this->data['aspam']=='capt') && ($this->keypublic=='' || $this->keyprivate=='') ){
+				$this->data['aspam']='none';
+				msg($this->SCF_LANG['rc_notset']);
+			}
 		}
 
+
+		//check if ckeditor is correctly aligned
 		if( $this->data['EnableCKE'] ){
-			//check if ckeditor is correctly aligned
 			if( file_exists($addonPathData.'/scf_style.css') ){
 				$style = file_get_contents($addonPathData.'/scf_style.css');
 			}else{
@@ -149,48 +181,56 @@ class Form{
 			unset($style);
 		}
 
-		// ******************************* template **********************
-		$t = $this->getfile($this->template,1); //get second splitted part
-		$x = explode('[NUMBERS]',$t,2);
-		if( ($this->data['aspam']=='math') && ($this->data['Math']!=0) && (count($x)>1)){ //if enabled and [NUMBERS] string was found
 
-			$t = $x[0].'<'.'?'.'php ';
-			$t .= 'if( $op==\'+\') echo $n1.\' + \'.$n2; ';
-			$t .= 'if( $op==\'-\') echo $n1+$n2.\' - \'.$n1; ';
-			$t .= 'if( $op==\'*\') echo $n1.\' * \'.$n2; ';
-			$t .= 'if( $op==\'a\'){ $tempstring=\''.str_replace('\'','\\\'',$this->data['msg_enter_letter']).'\'; echo \' \'.str_replace(array(\'%a\',\'%c\'),array(chr($n-1),chr($n+1)),$tempstring); } ';
-			$t .= 'if( $op==\'b\'){ echo \''.str_replace('\'','\\\'',$this->data['msg_enter_unique']).' \'; $rc=65+rand()%26; if($rc==$n) $rc=($n==65?90:65); $pos=1+rand()%5; for($rs=0;$rs<7;$rs++) echo ($rs==$pos)?chr($n):chr($rc); } ';
-			$t .= '?'.'>'.$x[1];
-			$disablemathchecking=false;
-		}else{
-			$t = $x[0].(isset($x[1])?$x[1]:'');
-			$disablemathchecking=true;
-		}
 
-		$x = explode('[CAPTCHA]',$t,2);
-		if( count($x)>1){ //if [CAPTCHA] string was found
 
-			if( $this->data['aspam']=='capt'){ //if captcha is enabled
-
-				$t = $x[0].'<'.'?'.'php ';
-				$t .= ' requi'.'re_once($dataDir.\'/include/thirdparty/recaptchalib.php\');
-						$publickey = \common::ConfigValue(\'recaptcha_public\',\'\');
-						echo recaptcha_get_html($publickey);';
-				$t .= '?'.'>'.$x[1];
-			}else{
-				$t = $x[0].(isset($x[1])?$x[1]:''); // this removes the [CAPTCHA] string from template
+		//Anti-Spam Math
+		$replacement = '';
+		if( $this->data['aspam']=='math' && $this->data['Math']!=0  && strpos($template, '[NUMBERS]') !== false ){
+			if( $this->op=='+' ){
+				$replacement = $this->n1.' + '.$this->n2;
 			}
-		}
-		if( $this->data['EnableCKE']){
-			$t .= ' <script type="text/javascript">
-				CKEDITOR.replace( \'item'.$this->data['id_sendermessage'].'\',
-				{
-					'.$this->data['ckValues'].'
-				});
-				</script> ';
+			if( $this->op=='-' ){
+				$replacement = $this->n1+$this->n2.' - '.$this->n1;
+			}
+			if( $this->op=='*' ){
+				$replacement = $this->n1.' * '.$this->n2;
+			}
+			if( $this->op=='a' ){
+				$tempstring = $this->data['msg_enter_letter'];
+				$replacement = ' '.str_replace(array('%a','%c'),array(chr($this->n1-1),chr($this->n1+1)),$tempstring);
+			}
+
+			if( $this->op=='b'){
+				$replacement = $this->data['msg_enter_unique'].' ';
+				$rc=65+rand()%26;
+				if( $rc==$this->n1 ){
+					$rc=($this->n1==65?90:65);
+				}
+
+				$pos=1+rand()%5;
+				for($rs=0;$rs<7;$rs++){
+					$replacement .= ($rs==$pos)?chr($this->n1):chr($rc);
+				}
+			}
+		}else{
+			$this->disablemathchecking = true;
 		}
 
-		// ******************************* begin *************************
+		$template = str_replace('[NUMBERS]',$replacement,$template);
+
+
+		//recaptcha
+		$replacement = '';
+		if( $this->data['aspam']=='capt'){
+			includeFile('tool/recaptcha.php');
+			$publickey		= \common::ConfigValue('recaptcha_public','');
+			$replacement	= recaptcha_get_html($publickey);
+		}
+		$template = str_replace('[CAPTCHA]',$replacement,$template);
+
+
+
 		\gpPlugin::js('form_validator.min.js');
 
 		$recaptcha_options				= array();
@@ -198,7 +238,7 @@ class Form{
 		$recaptcha_options['theme']		= $this->data['Captcha']['rctheme'];
 		$page->jQueryCode				.= 'var RecaptchaOptions = '.json_encode($recaptcha_options).';';
 		$rhc_string						= 'Antispam test passed!'; // REVERSE HONEYPOT CAPTCHA OK STRING ~ Antispam test passed! Humanity confirmed! :-)'
-		$begin							= '';
+		$end							= '';
 
 
 		if( file_exists($addonPathData.'/scf_style.css') ){
@@ -207,8 +247,104 @@ class Form{
 			$page->css_user[] = $addonRelativeCode.'/scf_style.css';
 		}
 
-		$begin .= '<div class="simplecontactform">';
-		$begin .= '<noscript><p>'.($this->data['msg_noscript']).'</p></noscript>';
+
+		//build form
+		$end .= '	<script type="text/javascript">';
+		$end .= '		var frmvalidator  = new Validator("special_contact_form");';
+		if( $this->data['validator_errors']==1){
+			$end .= '		frmvalidator.EnableOnPageErrorDisplaySingleBox();';
+		}else{
+			$end .= '		frmvalidator.EnableOnPageErrorDisplay();';
+		}
+
+		foreach( $this->items as $i => $value ){
+			if( $value['valid']==''){
+				continue;
+			}
+
+			$v = explode(',',$value['valid']);
+			foreach ($v as $vv){
+				$validation = trim($vv);
+				if( strpos($validation,'req')!==false){
+					$validation_message = $this->SCF_LANG['valid_req'].' - '.$value['label'];
+				}
+
+				if( strpos($validation,'minlen')!==false){
+					$validation_message = $this->SCF_LANG['valid_short'].' - '.$value['label'];
+				}
+
+				if( strpos($validation,'maxlen')!==false){
+					$validation_message = $this->SCF_LANG['valid_long'].' - '.$value['label'];
+				}
+
+				if( strpos($validation,'email')!==false){
+					$validation_message = $this->SCF_LANG['valid_email'];
+				}
+
+				$end .= '		frmvalidator.addValidation("item'.$i.'","'.$validation.'","'.$validation_message.'");';
+			}
+		}
+		if( $this->data['aspam']=='rhcapt'){
+			$end .= '		$(\'form[name="special_contact_form"] input[type="submit"]\').hover(function(){ this.form.url.value=\'<?'.'ph'.'p echo $rhc_string; ?'.'>\'; },function(){}); // confirm humanity';
+			$end .= '		$(\'form[name="special_contact_form"]\').keypress( function(evt){ return !(evt.which==13 && evt.target.type!=\'textarea\'); }); // prevent submiting by enter';
+			$end .= '		$(\'form[name="special_contact_form"] input[type="submit"]\').attr(\'tabIndex\',-1); // prevent submiting by spacebar (keyCode==32)';
+			//$('#item2').click(function(){ this.form.submit(); }); //testing when mouseover event is not fired
+		}else{ // == 'math' or 'capt' or 'none'
+
+			// url - must be empty - this is another anti spam check = direct honeypot captcha. (is this implemented correctly?)
+			$end .= '		frmvalidator.addValidation("url","maxlen=0","'.$this->SCF_LANG['valid_empty'].'");';
+		}
+		// check
+		if( $this->disablemathchecking==false){
+			$end .= '			frmvalidator.addValidation("check","req","'.$this->SCF_LANG['valid_antispam'].'");';
+			$end .= '		<?'.'php if( $this->op==\'+\') echo \'';
+			$end .= '			frmvalidator.addValidation("check","numeric","'.$this->SCF_LANG['valid_antispam'].'");';
+			$end .= '			frmvalidator.addValidation("check","greaterthan=\'.($this->n1+$this->n2-1).\'","'.$this->SCF_LANG['valid_antispam'].'");';
+			$end .= '			frmvalidator.addValidation("check","lessthan=\'.($this->n1+$this->n2+1).\'","'.$this->SCF_LANG['valid_antispam'].'");\';';
+			$end .= '		?>';
+			$end .= '		<?'.'php if( $this->op==\'-\') echo \'';
+			$end .= '			frmvalidator.addValidation("check","numeric","'.$this->SCF_LANG['valid_antispam'].'");';
+			$end .= '			frmvalidator.addValidation("check","greaterthan=\'.($this->n2-1).\'","'.$this->SCF_LANG['valid_antispam'].'");';
+			$end .= '			frmvalidator.addValidation("check","lessthan=\'.($this->n2+1).\'","'.$this->SCF_LANG['valid_antispam'].'");\';';
+			$end .= '		?>';
+			$end .= '		<?'.'php if( $this->op==\'*\') echo \'';
+			$end .= '			frmvalidator.addValidation("check","numeric","'.$this->SCF_LANG['valid_antispam'].'");';
+			$end .= '			frmvalidator.addValidation("check","greaterthan=\'.($this->n1*$this->n2-1).\'","'.$this->SCF_LANG['valid_antispam'].'");';
+			$end .= '			frmvalidator.addValidation("check","lessthan=\'.($this->n1*$this->n2+1).\'","'.$this->SCF_LANG['valid_antispam'].'");\';';
+			$end .= '		?>';
+			$end .= '		<?'.'php if( $this->op==\'a\' || $this->op==\'b\') echo \'';
+			$end .= '			frmvalidator.addValidation("check","alpha","'.$this->SCF_LANG['valid_antispam'].'");';
+			$end .= '			frmvalidator.addValidation("check","regexp=[\'.chr($this->n1).\']|[\'.chr($this->n1+32).\']","'.$this->SCF_LANG['valid_antispam'].'");\';';
+			$end .= '		?>';
+		}
+		$end .= '	</script>';
+		$end .= '</div>';
+
+
+		echo '<textarea style="width:100%;height:400px">';
+		echo htmlspecialchars( $end );
+		echo '</textarea>';
+
+
+
+		//CKEditor
+		if( $this->data['EnableCKE']){
+			echo '<script type="text/javascript" src="'. \common::GetDir('/include/thirdparty/ckeditor_34/ckeditor.js') .'"></script>';
+			echo ' <script type="text/javascript">
+				CKEDITOR.replace( \'item'.$this->data['id_sendermessage'].'\',
+				{
+					'.$this->data['ckValues'].'
+				});
+				</script> ';
+		}
+	}
+
+
+	/**
+	 * Send the posted form
+	 *
+	 */
+	function Send(){
 
 
 		if( $this->data['aspam']=='capt'){
@@ -400,6 +536,10 @@ class Form{
 		$begin .= '				{echo \'<br/><br/>'.str_replace('\'','\\\'', $this->data['msg_fail']).'\';}';
 		$begin .= '			echo \'<br/><br/>\';';
 		$begin .= '	  }';
+
+
+
+
 		if( $this->data['aspam']=='rhcapt'){
 			// test reverse honeypot captcha
 			$begin .= '	if( isset($_POST["submitForm"]) && $_POST[\'url\']!=$rhc_string)'; // if antispam field is not ok
@@ -409,104 +549,129 @@ class Form{
 			$begin .= '	if( isset($_POST["submitForm"]) && $_POST[\'url\']!=\'\')';
 			$begin .= '		{ echo \''.$this->SCF_LANG['spam_detected'].' (Honeypot Captcha)\';} ';
 		}
-		if( ($this->data['aspam']=='math') && $this->data['Math']!=0){
-			$op = ($this->data['Math']&1?'+':'').($this->data['Math']&2?'-':'').($this->data['Math']&4?'*':'').($this->data['Math']&8?'a':'').($this->data['Math']&16?'b':'');
-			$begin .= '	$op=\''.$op.'\';';
-			$begin .= '	$op=$op[(rand()%strlen($op))];';
-			$begin .= '	if( $op==\'a\' || $op==\'b\'){ $n = 66+rand()%24; } else { $n1 = rand()%10; $n2 = rand()%10; }';
-			$begin .= '	';
-		}
-		$begin .= '	?'.'>';
-
-		$begin .= '		<div id="scf_jsContentWrapper" style="display:none;">';
-
-		if( $this->data['EnableCKE']){
-			$begin .= '<script type="text/javascript" src="'. \common::GetDir('/include/thirdparty/ckeditor_34/ckeditor.js') .'"></script>';
-		}
-
-		// ******************************* end ***************************
-
-		$end = '';
-		$end .= '</div>'; //end of "scf_jsContentWrapper" division
-
-		$end .= '<'.'?'.'php'.'if( !isset($_POST["submitForm"]))'; // don't display the form after the sending
-		$end .= '{';
-		$end .= 'global $page;';
-		$end .= '$page->jQueryCode .= "$(\'#scf_jsContentWrapper\').removeAttr(\'style\');";';
-		$end .= '}';
-		$end .= '?'.'>';
-
-		$end .= '	<script type="text/javascript">';
-		$end .= '		var frmvalidator  = new Validator("special_contact_form");';
-		if( $this->data['validator_errors']==1)
-			$end .= '		frmvalidator.EnableOnPageErrorDisplaySingleBox();';
-		else
-			$end .= '		frmvalidator.EnableOnPageErrorDisplay();';
-		foreach ($this->items as $i => $value){
-			if( $value['valid']=='')
-				continue;
-			$v = explode(',',$value['valid']);
-			foreach ($v as $vv){
-				$validation = trim($vv);
-				//if( $value['type']=='select' && $vv=='')
-				//	$vv=' ';
-				if( strpos($validation,'req')!==false)
-					$validation_message = $this->SCF_LANG['valid_req'].' - '.$value['label'];
-				if( strpos($validation,'minlen')!==false)
-					$validation_message = $this->SCF_LANG['valid_short'].' - '.$value['label'];
-				if( strpos($validation,'maxlen')!==false)
-					$validation_message = $this->SCF_LANG['valid_long'].' - '.$value['label'];
-				if( strpos($validation,'email')!==false)
-					$validation_message = $this->SCF_LANG['valid_email'];
-				$end .= '		frmvalidator.addValidation("item'.$i.'","'.$validation.'","'.$validation_message.'");';
-			}
-		}
-		if( $this->data['aspam']=='rhcapt'){
-			$end .= '		$(\'form[name="special_contact_form"] input[type="submit"]\').hover(function(){ this.form.url.value=\'<?'.'ph'.'p echo $rhc_string; ?'.'>\'; },function(){}); // confirm humanity';
-			$end .= '		$(\'form[name="special_contact_form"]\').keypress( function(evt){ return !(evt.which==13 && evt.target.type!=\'textarea\'); }); // prevent submiting by enter';
-			$end .= '		$(\'form[name="special_contact_form"] input[type="submit"]\').attr(\'tabIndex\',-1); // prevent submiting by spacebar (keyCode==32)';
-			//$('#item2').click(function(){ this.form.submit(); }); //testing when mouseover event is not fired
-		}else{ // == 'math' or 'capt' or 'none'
-
-			// url - must be empty - this is another anti spam check = direct honeypot captcha. (is this implemented correctly?)
-			$end .= '		frmvalidator.addValidation("url","maxlen=0","'.$this->SCF_LANG['valid_empty'].'");';
-		}
-		// check
-		if( $disablemathchecking==false){
-			$end .= '			frmvalidator.addValidation("check","req","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '		<?'.'php if( $op==\'+\') echo \'';
-			$end .= '			frmvalidator.addValidation("check","numeric","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '			frmvalidator.addValidation("check","greaterthan=\'.($n1+$n2-1).\'","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '			frmvalidator.addValidation("check","lessthan=\'.($n1+$n2+1).\'","'.$this->SCF_LANG['valid_antispam'].'");\';';
-			$end .= '		?>';
-			$end .= '		<?'.'php if( $op==\'-\') echo \'';
-			$end .= '			frmvalidator.addValidation("check","numeric","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '			frmvalidator.addValidation("check","greaterthan=\'.($n2-1).\'","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '			frmvalidator.addValidation("check","lessthan=\'.($n2+1).\'","'.$this->SCF_LANG['valid_antispam'].'");\';';
-			$end .= '		?>';
-			$end .= '		<?'.'php if( $op==\'*\') echo \'';
-			$end .= '			frmvalidator.addValidation("check","numeric","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '			frmvalidator.addValidation("check","greaterthan=\'.($n1*$n2-1).\'","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '			frmvalidator.addValidation("check","lessthan=\'.($n1*$n2+1).\'","'.$this->SCF_LANG['valid_antispam'].'");\';';
-			$end .= '		?>';
-			$end .= '		<?'.'php if( $op==\'a\' || $op==\'b\') echo \'';
-			$end .= '			frmvalidator.addValidation("check","alpha","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '			frmvalidator.addValidation("check","regexp=[\'.chr($n).\']|[\'.chr($n+32).\']","'.$this->SCF_LANG['valid_antispam'].'");\';';
-			$end .= '		?>';
-		}
-		$end .= '	</script>';
-		$end .= '</div>';
-		$str='<'.'?'.'php defined(\'is_running\') or die(\'Not an entry point...\');
- ?'.'>';
-
-
-		echo '<textarea style="width:100%;height:400px">';
-		echo htmlspecialchars( $str. $begin.$t.$end );
-		echo '</textarea>';
-
 	}
 
 
+	/**
+	 * Generate the html for the form
+	 *
+	 */
+	function GenerateTemplate(){
+
+		ob_start();
+
+		echo '<div>'.$this->SCF_LANG['form'].'</div><br/>';
+		echo '<form enctype="multipart/form-data" action="" method="post" name="special_contact_form" class="scf">';
+		echo ' <fieldset>';
+
+
+		foreach( $this->items as $i => $value ){
+			if( $value['type']=='radio')
+				echo '  <p><b>'.$value['label'].'</b></p>';
+			else
+				echo '  <label for="item'.$i.'"><b>'.$value['label'].'</b>';
+			$rnr = '    *('.(strpos($value['valid'],'req')===false ? $this->SCF_LANG['recommended']:$this->SCF_LANG['required']).')';
+			if( $value['type']=='textarea' && $i!=$this->data['id_sendermessage'])
+				echo $rnr;
+			switch ($value['type']){
+				case 'input':
+					echo '   <input id="item'.$i.'" name="item'.$i.'" type="text" value="" />';
+				break;
+				case 'checkbox':
+					echo '   <input id="item'.$i.'" name="item'.$i.'" type="checkbox" />';
+				break;
+				case 'radio':
+					if( $value['multi_values']=='')
+						break; //skips wrong field
+					$vs = explode(',', $value['multi_values']);
+					$first = true;
+					foreach ($vs as $j => $str){
+						echo '   <label for="item'.$i.'_'.$j.'"><b>'.$str.'</b> <input id="item'.$i.'_'.$j.'" name="item'.$i.'" type="radio" value="'.$str.'"'.($first?' checked="checked"':'').' /> </label><br/>';
+						if( $first) $first=false;
+					}
+				break;
+				case 'select':
+					echo '  <select id="item'.$i.'" name="item'.$i.'">';
+					if( $value['multi_values']!=''){
+						$vs = explode(',', $value['multi_values']);
+						foreach ($vs as $str){
+							echo '    <option value="'.$str.'">'.$str.'</option> ';
+						}
+					}
+					echo '   </select>';
+				break;
+				case 'textarea':
+					echo '   <textarea id="item'.$i.'" name="item'.$i.'" '.($i==$this->data['id_sendermessage'] ? $this->data['message_ta_params']:'cols="30" rows="5"').'></textarea>';
+				break;
+				case 'file':
+					echo '    ('.$this->SCF_LANG['max_filesize'].': '.ini_get('upload_max_filesize').'B)';
+					echo '   <input id="item'.$i.'" name="item'.$i.'" type="file" value="" style="margin-right:90px"/>';
+				break;
+			}
+			if( $value['type']=='input')
+				echo $rnr;
+			if( $this->data['validator_errors']==2)
+				echo '    <span class="error_strings" id="special_contact_form_item'.$i.'_errorloc"> </span>';
+			if( $value['type']!='radio')
+				echo '  </label>';
+		}
+		if( $this->data['sendcopytosender']){
+			echo '  <label for="sendcopytosender">'.$this->data['msg_sendcopytosender'];
+			echo '   <input id="sendcopytosender" name="sendcopytosender" type="checkbox" /> ';
+			echo '  </label>';
+		}
+
+
+		//anti spam math
+		if( $this->data['aspam']=='math' ){
+			echo '  <label for="check"><b>'.$this->SCF_LANG['antispam'].'</b>';
+			echo '    <span style="float:left">'.$this->SCF_LANG['enter_result'].' [NUMBERS] : </span>';
+			echo '    <input id="check" name="check" type="text" value="" class="scf_input" />';
+			echo '  </label>';
+		}
+
+		if( $this->data['aspam']=='capt'){
+			echo '  <label><b>'.$this->SCF_LANG['antispam'].'</b>';
+			echo ' [CAPTCHA] ';
+			echo '</label><br/>';
+		}
+		echo '    <input class="scf_submit" name="submitForm" type="submit" value="'.$this->SCF_LANG['send'].'" />';
+		echo '    <input id="url" name="url" type="text" value="" style="display:none" />';
+		echo '    <input id="website" name="website" type="text" value="" style="display:none" />';
+		if( $this->data['validator_errors']==1){
+			echo '    <span class="error_strings" id="special_contact_form_errorloc"> </span>';
+		}
+		if( $this->data['validator_errors']==2){
+			echo '    <span class="error_strings" id="special_contact_form_check_errorloc"> </span>';
+		}
+		echo ' </fieldset>';
+		echo '</form>';
+
+		$template = ob_get_clean();
+
+
+		return preg_replace('#(</?[a-zA-Z])#',"\n".'$1',$template);
+	}
+
+
+
+	/**
+	 * get operator for anti-spam
+	 */
+	function Operator(){
+		if( ($this->data['aspam']=='math') && $this->data['Math']!=0 ){
+
+			$ops			= ($this->data['Math']&1?'+':'').($this->data['Math']&2?'-':'').($this->data['Math']&4?'*':'').($this->data['Math']&8?'a':'').($this->data['Math']&16?'b':'');
+			$this->op		= $ops[(rand()%strlen($ops))];
+
+			if( $this->op == 'a' || $this->op=='b' ){
+				$this->n1	= 66+rand()%24;
+			}else{
+				$this->n1	= rand()%10;
+				$this->n2	= rand()%10;
+			}
+		}
+	}
 
 	function getfile($filename,$part){
 		if( !file_exists($filename))
