@@ -238,11 +238,6 @@ namespace Addon\SCF{
 			echo \common::Link($title,$this->SCF_LANG['edita'],'cmd=edit_templatea').'&nbsp; | &nbsp;';
 			echo \common::Link($title,$this->SCF_LANG['edite'],'cmd=edit_template').' </p>';
 
-			echo '<div style="font-size:16px; margin:1.5em 0;">'.$this->SCF_LANG['form'].'</div>'."\n";
-			echo '<p> '.\common::Link($title,$this->SCF_LANG['create'],'cmd=create_form').'&nbsp; | &nbsp;';
-			echo \common::Link('Special_scf',$this->SCF_LANG['test'],'','target="_blank"').'&nbsp; | &nbsp;';
-			echo \common::Link($title,$this->SCF_LANG['edita'],'cmd=edit_forma').' </p>';
-
 			echo '<br/><br/><br/>';
 		}
 
@@ -299,30 +294,11 @@ namespace Addon\SCF{
 			echo '</form>';
 		}
 
-		function edit_form(){ //in textarea
-
-			global $page,$addonRelativeCode,$addonRelativeData,$addonPathData,$title, $langmessage;
-			echo '<p style="font-size:16px; margin-bottom:1.5em;">'.$this->SCF_LANG['form'].' - '.$this->SCF_LANG['edita'].'</p>'."\n";
-			echo '<form action="'.\common::GetUrl($title).'" method="post">';
-			echo '<textarea id="textfield" name="textfield" wrap="off" rows="20" cols="50" spellcheck="false" style="width:100%">';
-			echo htmlspecialchars($this->getfile($addonPathData.'/contact_form.php',1));
-			echo '</textarea>'."\n";
-			echo '<input type="submit" name="save_form" value="'.$langmessage['save'].'" /> <br/>'."\n";
-			echo '</form>';
-		}
 
 		function save_template($newcontent){
 			$begin = $this->getfile($this->template,0);
 			if( file_put_contents($this->template, $begin.' ?'.'> '.$newcontent))
 				message($this->SCF_LANG['template_saved']);
-		}
-
-		function save_form($newcontent){
-			global $addonPathData,$config;
-			$form_file = $addonPathData.'/contact_form.php';
-			$begin = $this->getfile($form_file,0);
-			if( file_put_contents($form_file, $begin.' ?'.'> '.$newcontent))
-				message($this->SCF_LANG['cf_saved'].' '.$config['toemail'].'. >>  '.\common::Link('Special_scf',\common::GetLabel('Special_scf'),'','target="_blank"').'<br/><br/>');
 		}
 
 		function create_template(){
@@ -486,9 +462,6 @@ namespace Addon\SCF{
 			if( isset($_POST['save_template'])){
 				$this->save_template($_POST['textfield']);
 			}
-			if( isset($_POST['save_form'])){
-				$this->save_form($_POST['textfield']);
-			}
 
 			$cmd = \common::GetCommand();
 			switch($cmd){
@@ -502,18 +475,11 @@ namespace Addon\SCF{
 				$this->create_template();
 				break;
 
-				case 'create_form':
-				$this->create_form();
-				break;
-
 				case 'edit_templatea':
 				case 'edit_template':
 				$this->edit_template();
 				break;
 
-				case 'edit_forma';
-				$this->edit_form();
-				break;
 
 				case 'view_template':
 				$this->view_template();
