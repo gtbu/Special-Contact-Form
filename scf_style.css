@@ -1,0 +1,74 @@
+/* contact form css */
+
+form.scf {
+	position:static;
+	width: 98%;
+	padding: 0 8px;
+}
+
+
+form.scf label {
+	display: block;
+	float: left;
+	clear: both;
+	margin: 10px 0;
+}
+
+form.scf label b {
+	display: block;
+	float: left;
+	width: 110px;
+	margin-right: 20px;
+}
+
+form.scf label input,
+form.scf label file,
+form.scf label button,
+form.scf label textarea,
+form.scf label select {
+	float: left;
+	width: 180px;
+}
+
+form.scf label input[type="radio"],
+form.scf label input[type="checkbox"] {
+	width: 20px;
+}
+
+form.scf p {
+	clear: left;
+	margin: 10px 0 0;
+}
+
+form.scf input[type="file"] {
+	margin-left: 100px; /*space for Browse button*/
+}
+
+form.scf input[type="submit"] {
+	margin-left: 100px; /*space for Browse button*/
+	clear:left;
+	float:left;
+}
+
+form.scf span.error_strings {
+	color: red;
+	float: none;
+	padding-left: 1em;
+}
+#special_contact_form_check_errorloc,
+#special_contact_form_errorloc {
+	clear:none;
+	float:left;
+	padding-left: 1em;
+}
+
+#check {
+	width:40px;
+}
+
+/*
+some useful links:
+http://samcroft.co.uk/2011/minimal-form-markup-simple-slender-and-semantic/
+http://stackoverflow.com/questions/7197835/resize-the-input-type-file-browse-button-in-firefox
+http://www.barelyfitz.com/screencast/html-training/css/positioning/
+*/
