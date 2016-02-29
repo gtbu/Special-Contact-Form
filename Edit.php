@@ -8,6 +8,13 @@ namespace Addon\SCF{
 
 	class Edit extends \Addon\SCF\Form{
 
+		function __construct(){
+			parent::__construct();
+
+			\gpPlugin::js('edit.js');
+
+		}
+
 
 		function menu(){
 			global $config, $addonRelativeCode,$page,$langmessage,$languages, $addonPathCode,$addonPathData,$title;
@@ -19,11 +26,9 @@ namespace Addon\SCF{
 			$this->Select_Languages();
 			echo '</div>';
 
-			echo '<div style="font-size:16px; margin-bottom:1.5em;">'.$langmessage['Settings'].'</div>'."\n";
-
 			// begin 1
-			echo '<h3 onclick="$(this).next(\'div\').toggle()" style="cursor:pointer">1. '.$this->SCF_LANG['form_fields'].'</h3>';
-			echo '<hr/>';
+			echo '<h3><a data-cmd="ToggleSettings">1. '.$this->SCF_LANG['form_fields'].'</a><hr/></h3>';
+
 			echo '<div style="display:none"><br/>';
 			echo '<form action="'.\common::GetUrl($title).'" method="post">'."\n";
 
@@ -106,8 +111,8 @@ namespace Addon\SCF{
 	/*end1*/	echo '</form></div><br/>';
 
 			// begin 2
-			echo '<h3 onclick="$(this).next(\'div\').toggle()" style="cursor:pointer">2. '.$this->SCF_LANG['antispam'].'</h3>';
-			echo '<hr/>';
+			echo '<h3><a data-cmd="ToggleSettings">2. '.$this->SCF_LANG['antispam'].'</a><hr/></h3>';
+
 			echo '<div style="display:none">';
 			echo '<form action="'.\common::GetUrl($title).'" method="post"><br/>'."\n";
 
@@ -140,8 +145,8 @@ namespace Addon\SCF{
 	/*end2*/	echo '</form></div><br/>';
 
 			// begin 3
-			echo '<h3 onclick="$(this).next(\'div\').toggle()" style="cursor:pointer">3.'.$this->SCF_LANG['email_settings'].'</h3>';
-			echo '<hr/>';
+			echo '<h3><a data-cmd="ToggleSettings">3. '.$this->SCF_LANG['email_settings'].'</a><hr/></h3>';
+
 			echo '<div style="display:none">';
 			echo '<form action="'.\common::GetUrl($title).'" method="post">'."\n";
 			echo '<span style="color:green">'.$this->SCF_LANG['will_deliver'].'</span> <input name="Receiver" type="text" value="'.( isset($config["toemail"]) ? str_replace('"','&quot;',$config["toemail"]) : '' ).'" size="25" /> = <input name="ReceiverName" type="text" value="'.( isset($config["toname"]) ? str_replace('"','&quot;',$config["toname"]) : '' ).'" size="25" /> '.\common::Link('Admin_Configuration','&#187;','','name="admin_box" title="'.$langmessage['configuration'].'"').'<br/>'."\n";
@@ -164,8 +169,7 @@ namespace Addon\SCF{
 	/*end3*/	echo '</form></div><br/>';
 
 			// begin 4
-			echo '<h3 onclick="$(this).next(\'div\').toggle()" style="cursor:pointer"> 4.'.$this->SCF_LANG['other'].'</h3>';
-			echo '<hr/>';
+			echo '<h3><a data-cmd="ToggleSettings">4. '.$this->SCF_LANG['other'].'</a><hr/></h3>';
 
 			echo '<div style="display:none"><br/>';
 			echo '<form action="'.\common::GetUrl($title).'" method="post">'."\n";
