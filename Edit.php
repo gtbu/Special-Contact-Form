@@ -149,10 +149,12 @@ namespace Addon\SCF{
 
 			echo '<div style="display:none">';
 			echo '<form action="'.\common::GetUrl($title).'" method="post">'."\n";
-			echo '<span style="color:green">'.$this->SCF_LANG['will_deliver'].'</span> <input name="Receiver" type="text" value="'.( isset($config["toemail"]) ? str_replace('"','&quot;',$config["toemail"]) : '' ).'" size="25" /> = <input name="ReceiverName" type="text" value="'.( isset($config["toname"]) ? str_replace('"','&quot;',$config["toname"]) : '' ).'" size="25" /> '.\common::Link('Admin_Configuration','&#187;','','name="admin_box" title="'.$langmessage['configuration'].'"').'<br/>'."\n";
+			echo '<span style="color:green">'.$this->SCF_LANG['will_deliver'].'</span> <input name="Receiver" type="text" value="'.( isset($config["toemail"]) ? str_replace('"','&quot;',$config["toemail"]) : '' ).'" size="25" /> = <input name="ReceiverName" type="text" value="'.( isset($config["toname"]) ? str_replace('"','&quot;',$config["toname"]) : '' ).'" size="25" /> '.\common::Link('Admin_Configuration','&#187;','',' title="'.$langmessage['configuration'].'"').'<br/>'."\n";
 			echo $this->SCF_LANG['wordwrap'].' <input name="WordWrap" type="text" value="'.$this->data['WordWrap'].'" /><br/>'."\n";
 			echo $this->SCF_LANG['charset'].': <input name="CharSet" type="text" value="'.$this->data['CharSet'].'" /><br/>'."\n";
 			echo '<a href="http://php.net/manual/en/features.file-upload.errors.php" target="_blank">'.$this->SCF_LANG['max_filesize'].'</a>: '.ini_get('upload_max_filesize').'B<br/><br/>'."\n";
+
+			/*
 			echo $langmessage['mail_method'];
 			echo ' : <input id="method1" name="method" type="radio" value="smtp" '.($this->data['method']=='smtp'?'checked="checked"':'').'/> <label for="method1">SMTP server</label> '."\n";
 			echo '<input id="method2" name="method" type="radio" value="mail" '.($this->data['method']=='mail'?'checked="checked"':'').'/> <label for="method2">function mail()</label> '."\n";
@@ -165,6 +167,8 @@ namespace Addon\SCF{
 			echo '<span style="color:green">'.$this->SCF_LANG['smtp_pass'].'</span> : <input name="Password" type="password" value="'.(isset($config['smtp_pass'])?$config['smtp_pass']:'').'" /><br/>'."\n";
 			echo '<span style="color:green">'.$langmessage['sendmail_path'].'</span> : '.(isset($config['sendmail_path'])?$config['sendmail_path']:$langmessage['default']).'<br/>'."\n";
 			echo '<div style="clear:both;height:1em;"></div>';
+			*/
+
 			echo '<input type="submit" name="save_emailsettings" value="'.$langmessage['save'].'" />'."\n";
 	/*end3*/	echo '</form></div><br/>';
 
@@ -243,11 +247,12 @@ namespace Addon\SCF{
 			echo '</select><br/><br/>';
 
 			echo '<input type="submit" name="save_othersettings" value="'.$langmessage['save'].'" /> &nbsp;&nbsp;&nbsp;&nbsp;'."\n";
-	/*end4*/	echo '</form></div><br/><br/><br/>';
+			/*end4*/
+			echo '</form></div><br/>';
 
-			echo '<div style="font-size:16px; margin:1.5em 0;">'.$this->SCF_LANG['template'].'</div>'."\n";
+			echo '<h3>5. '.$this->SCF_LANG['template'].'<hr/></h3>'."\n";
 			echo '<p> '.\common::Link($title,$this->SCF_LANG['create'],'cmd=create_template').'&nbsp; | &nbsp;';
-			echo \common::Link($title,$this->SCF_LANG['view'],'cmd=view_template').'&nbsp; | &nbsp;';
+			echo \common::Link('special_scf',$this->SCF_LANG['view']).'&nbsp; | &nbsp;';
 			echo \common::Link($title,$this->SCF_LANG['edita'],'cmd=edit_templatea').'&nbsp; | &nbsp;';
 			echo \common::Link($title,$this->SCF_LANG['edite'],'cmd=edit_template').' </p>';
 
