@@ -21,7 +21,9 @@ class Form{
 	protected $op;
 	protected $n1;
 	protected $n2;
-	protected $disablemathchecking = false;
+	protected $disablemathchecking	= false;
+	protected $rhc_string			= 'Antispam test passed!'; // REVERSE HONEYPOT CAPTCHA OK STRING ~ Antispam test passed! Humanity confirmed! :-)'
+
 
 	function __construct(){
 		global $config, $addonPathCode, $addonPathData;
@@ -121,12 +123,6 @@ class Form{
 	 *
 	 */
 	function Start(){
-		global $addonPathData;
-
-		if( file_exists($addonPathData.'/contact_form.php') ){
-			include($addonPathData.'/contact_form.php');
-			echo '<hr/>';
-		}
 
 		echo '<div class="simplecontactform">';
 		echo '<noscript><p>'.($this->data['msg_noscript']).'</p></noscript>';
@@ -137,6 +133,8 @@ class Form{
 
 		$this->Operator();
 		$this->create_form();
+
+		echo '</div>';
 	}
 
 
@@ -146,8 +144,8 @@ class Form{
 	 *
 	 */
 	function create_form(){
-		global $page;
-		global $addonRelativeData, $addonPathData, $addonPathCode, $addonRelativeCode, $config, $dataDir, $gp_titles, $gp_index, $addonFolderName;
+		global $page, $title;
+		global $addonRelativeData, $addonPathData, $addonPathCode, $addonRelativeCode;
 
 		//get the template
 		if( file_exists($this->template) ){
@@ -229,6 +227,7 @@ class Form{
 		}
 		$template = str_replace('[CAPTCHA]',$replacement,$template);
 
+		echo $template;
 
 
 		\gpPlugin::js('form_validator.min.js');
@@ -237,7 +236,6 @@ class Form{
 		$recaptcha_options['lang']		= \common::ConfigValue('recaptcha_language','');
 		$recaptcha_options['theme']		= $this->data['Captcha']['rctheme'];
 		$page->jQueryCode				.= 'var RecaptchaOptions = '.json_encode($recaptcha_options).';';
-		$rhc_string						= 'Antispam test passed!'; // REVERSE HONEYPOT CAPTCHA OK STRING ~ Antispam test passed! Humanity confirmed! :-)'
 		$end							= '';
 
 
@@ -248,8 +246,7 @@ class Form{
 		}
 
 
-		//build form
-		$end .= '	<script type="text/javascript">';
+		//build form validator
 		$end .= '		var frmvalidator  = new Validator("special_contact_form");';
 		if( $this->data['validator_errors']==1){
 			$end .= '		frmvalidator.EnableOnPageErrorDisplaySingleBox();';
@@ -285,58 +282,56 @@ class Form{
 			}
 		}
 		if( $this->data['aspam']=='rhcapt'){
-			$end .= '		$(\'form[name="special_contact_form"] input[type="submit"]\').hover(function(){ this.form.url.value=\'<?'.'ph'.'p echo $rhc_string; ?'.'>\'; },function(){}); // confirm humanity';
-			$end .= '		$(\'form[name="special_contact_form"]\').keypress( function(evt){ return !(evt.which==13 && evt.target.type!=\'textarea\'); }); // prevent submiting by enter';
-			$end .= '		$(\'form[name="special_contact_form"] input[type="submit"]\').attr(\'tabIndex\',-1); // prevent submiting by spacebar (keyCode==32)';
-			//$('#item2').click(function(){ this.form.submit(); }); //testing when mouseover event is not fired
+			$end .= '		$(\'form[name="special_contact_form"] input[type="submit"]\').hover(function(){ this.form.url.value=\''.$rhc_string.'\'; },function(){});'; // confirm humanity
+			$end .= '		$(\'form[name="special_contact_form"]\').keypress( function(evt){ return !(evt.which==13 && evt.target.type!=\'textarea\'); });'; // prevent submiting by enter
+			$end .= '		$(\'form[name="special_contact_form"] input[type="submit"]\').attr(\'tabIndex\',-1);'; // prevent submiting by spacebar (keyCode==32)
 		}else{ // == 'math' or 'capt' or 'none'
 
 			// url - must be empty - this is another anti spam check = direct honeypot captcha. (is this implemented correctly?)
 			$end .= '		frmvalidator.addValidation("url","maxlen=0","'.$this->SCF_LANG['valid_empty'].'");';
 		}
+
 		// check
 		if( $this->disablemathchecking==false){
 			$end .= '			frmvalidator.addValidation("check","req","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '		<?'.'php if( $this->op==\'+\') echo \'';
-			$end .= '			frmvalidator.addValidation("check","numeric","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '			frmvalidator.addValidation("check","greaterthan=\'.($this->n1+$this->n2-1).\'","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '			frmvalidator.addValidation("check","lessthan=\'.($this->n1+$this->n2+1).\'","'.$this->SCF_LANG['valid_antispam'].'");\';';
-			$end .= '		?>';
-			$end .= '		<?'.'php if( $this->op==\'-\') echo \'';
-			$end .= '			frmvalidator.addValidation("check","numeric","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '			frmvalidator.addValidation("check","greaterthan=\'.($this->n2-1).\'","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '			frmvalidator.addValidation("check","lessthan=\'.($this->n2+1).\'","'.$this->SCF_LANG['valid_antispam'].'");\';';
-			$end .= '		?>';
-			$end .= '		<?'.'php if( $this->op==\'*\') echo \'';
-			$end .= '			frmvalidator.addValidation("check","numeric","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '			frmvalidator.addValidation("check","greaterthan=\'.($this->n1*$this->n2-1).\'","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '			frmvalidator.addValidation("check","lessthan=\'.($this->n1*$this->n2+1).\'","'.$this->SCF_LANG['valid_antispam'].'");\';';
-			$end .= '		?>';
-			$end .= '		<?'.'php if( $this->op==\'a\' || $this->op==\'b\') echo \'';
-			$end .= '			frmvalidator.addValidation("check","alpha","'.$this->SCF_LANG['valid_antispam'].'");';
-			$end .= '			frmvalidator.addValidation("check","regexp=[\'.chr($this->n1).\']|[\'.chr($this->n1+32).\']","'.$this->SCF_LANG['valid_antispam'].'");\';';
-			$end .= '		?>';
+
+			if( $this->op == '+' ){
+				$end .= '	frmvalidator.addValidation("check","numeric","'.$this->SCF_LANG['valid_antispam'].'");';
+				$end .= '	frmvalidator.addValidation("check","greaterthan='.($this->n1+$this->n2-1).'","'.$this->SCF_LANG['valid_antispam'].'");';
+				$end .= '	frmvalidator.addValidation("check","lessthan='.($this->n1+$this->n2+1).'","'.$this->SCF_LANG['valid_antispam'].'");';
+			}
+
+			if( $this->op == '-' ){
+				$end .= '	frmvalidator.addValidation("check","numeric","'.$this->SCF_LANG['valid_antispam'].'");';
+				$end .= '	frmvalidator.addValidation("check","greaterthan='.($this->n2-1).'","'.$this->SCF_LANG['valid_antispam'].'");';
+				$end .= '	frmvalidator.addValidation("check","lessthan='.($this->n2+1).'","'.$this->SCF_LANG['valid_antispam'].'");';
+			}
+
+			if( $this->op == '*' ){
+				$end .= '	frmvalidator.addValidation("check","numeric","'.$this->SCF_LANG['valid_antispam'].'");';
+				$end .= '	frmvalidator.addValidation("check","greaterthan='.($this->n1*$this->n2-1).'","'.$this->SCF_LANG['valid_antispam'].'");';
+				$end .= '	frmvalidator.addValidation("check","lessthan='.($this->n1*$this->n2+1).'","'.$this->SCF_LANG['valid_antispam'].'");';
+			}
+
+			if( $this->op == 'a' || $this->op == 'b' ){
+				$end .= '	frmvalidator.addValidation("check","alpha","'.$this->SCF_LANG['valid_antispam'].'");';
+				$end .= '	frmvalidator.addValidation("check","regexp=['.chr($this->n1).']|['.chr($this->n1+32).']","'.$this->SCF_LANG['valid_antispam'].'");';
+			}
 		}
-		$end .= '	</script>';
-		$end .= '</div>';
 
-
-		echo '<textarea style="width:100%;height:400px">';
-		echo htmlspecialchars( $end );
-		echo '</textarea>';
-
-
+		$page->jQueryCode				.= $end;
 
 		//CKEditor
 		if( $this->data['EnableCKE']){
 			echo '<script type="text/javascript" src="'. \common::GetDir('/include/thirdparty/ckeditor_34/ckeditor.js') .'"></script>';
-			echo ' <script type="text/javascript">
+			$page->jQueryCode .= '
 				CKEDITOR.replace( \'item'.$this->data['id_sendermessage'].'\',
 				{
 					'.$this->data['ckValues'].'
 				});
-				</script> ';
+				';
 		}
+
 	}
 
 
@@ -345,210 +340,216 @@ class Form{
 	 *
 	 */
 	function Send(){
+		global $langmessage, $title, $config;
 
+		includeFile('tool/recaptcha.php');
+		includeFile('tool/email_mailer.php');
 
+		// test ordinary honeypot captcha
+		if( $_POST['url'] != '' && $_POST['url'] != $this->rhc_string ){
+			echo $this->SCF_LANG['spam_detected'].' (Honeypot Captcha) ';
+			return;
+		}
+
+		// check recaptcha
 		if( $this->data['aspam']=='capt'){
-			$begin .= 'if( isset($_POST["submitForm"])){';
-			$begin .= ' requi'.'re_once($dataDir.\'/include/thirdparty/recaptchalib.php\');';
-			$begin .= ' $privatekey = \common::ConfigValue(\'recaptcha_private\',\'\');';
-			$begin .= ' $resp = recaptcha_check_answer($privatekey, $_SERVER["REMOTE_ADDR"], $_POST["recaptcha_challenge_field"], $_POST["recaptcha_response_field"]);';
-			$z = explode('[ERRORCODE]',$this->data['msg_rcerror'],2);
-			$begin .= ' if( !$resp->is_valid){';
-			$begin .= '  echo "'.$z[0].'".$resp->error."'.(isset($z[1])?$z[1]:'').'";';
-			$begin .= ' }';
-			$begin .= '}';
-			$begin .= 'if( isset($_POST["submitForm"]) && $_POST["url"]==\'\' && $resp->is_valid){';
-		}elseif( $this->data['aspam']=='math'){
-			$begin .= 'if( isset($_POST["submitForm"]) && $_POST["url"]==\'\'){';
-		}elseif( $this->data['aspam']=='rhcapt'){
-			$begin .= 'if( isset($_POST["submitForm"]) && $_POST["url"]==$rhc_string){';
-		}else{ // no antispam protection
-			$begin .= 'if( isset($_POST["submitForm"])){';
-		}
 
-		$eol = $this->data['EnableCKE']? '\'<br/>\'' : '"\n"';
-		$b1 = $this->data['EnableCKE']? '\'<b>\'.' : '';
-		$b2 = $this->data['EnableCKE']? '.\'</b>\'' : '';
-		$begin .= ' requi'.'re_once($addonPathCode.\'/class.phpmailer.php\'); ';
-		$begin .= ' $mail = new PHPMailer();';
-		$begin .= ' $mail->SetLanguage("'.$this->data['Language'].'");';
-		$begin .= ' $mail->IsHTML('.($this->data['EnableCKE']?'true':'false').');';
-		$begin .= ' $mail->WordWrap = '.$this->data['WordWrap'].';';
-		$begin .= ' $mail->CharSet = "'.$this->data['CharSet'].'";';
-		if( $this->data['method']=='smtp'){
-			$begin .= ' $mail->IsSMTP();'; // we use the SMTP server to send e-mail
-			$begin .= ' $mail->SMTPDebug = false;';
-			$begin .= ' $mail->SMTPAuth = '.($this->data['SMTPAuth']?'true':'false').';';
-			if( $this->data['SMTPAuth']=='true'){
-				$begin .= ' $mail->SMTPSecure="'.$this->data['SMTPSecure'].'";';
-				$begin .= ' $mail->Host="'.($this->data['Host']).'";';
-				$begin .= ' $mail->Port="'.($this->data['Port']).'";';
-				$begin .= ' $mail->Username=$config[\'smtp_user\'];';
-				$begin .= ' $mail->Password=$config[\'smtp_pass\'];';
-			}
-		}elseif( $this->data['method']=='mail'){
-			$begin .= ' $mail->IsMail();'; // we use the mail() function to send e-mail
-		}elseif( $this->data['method']=='sendmail'){
-			$begin .= ' $mail->IsSendmail();'; // we use the Sendmail program to send e-mail
-			$begin .= ' if( $config[\'sendmail_path\']!=\'\')';
-			$begin .= '  $mail->Sendmail = $config[\'sendmail_path\'];';
-		}
-		if( $this->data['msg_listing']!=''){
-			$begin .= ' echo \''.str_replace('\'','\\\'', $this->data['msg_listing']).'<br/>\';';
+			$privatekey = \common::ConfigValue('recaptcha_private','');
+			$resp 		= recaptcha_check_answer($privatekey, $_SERVER["REMOTE_ADDR"], $_POST["recaptcha_challenge_field"], $_POST["recaptcha_response_field"]);
+			$z			= explode('[ERRORCODE]',$this->data['msg_rcerror'],2);
 
-		foreach ($this->items as $i => $value){
-			$begin .= ' echo \'<b>'.$value['label'].':</b> \';';
-			if( $value['type']=='input' || $value['type']=='radio' || $value['type']=='select' || $value['type']=='textarea'){
-				$begin .= ' if( isset($_POST[\'item'.$i.'\']))';
-				$begin .= ' {';
-				$begin .= '  echo $_POST[\'item'.$i.'\'].\'<br/>\';';
-				$begin .= ' }';
-				$begin .= ' else';
-				$begin .= '  echo \'-<br/>\';';
-			}
-			if( $value['type']=='checkbox'){
-				$begin .= ' if( isset($_POST[\'item'.$i.'\']))';
-				$begin .= '  echo \''.$this->SCF_LANG['checked'].'<br/>\';';
-				$begin .= ' else';
-				$begin .= '  echo \''.$this->SCF_LANG['unchecked'].'<br/>\';';
-			}
-			if( $value['type']=='file'){
-				$begin .= ' if( $_FILES[\'item'.$i.'\'][\'name\']!=\'\')';
-				$begin .= '  echo \'<i>\'.$_FILES[\'item'.$i.'\'][\'name\'].\'</i>\';';
-				$begin .= ' else';
-				$begin .= '  echo \'-\';';
-				$begin .= ' if( $_FILES[\'item'.$i.'\'][\'error\']!=0 && $_FILES[\'item'.$i.'\'][\'error\']!=4)';
-				$begin .= '  echo \' <i>error</i> <a href="http://php.net/manual/en/features.file-upload.errors.php" target="_blank">\'.$_FILES[\'item'.$i.'\'][\'error\'].\'</a>\';';
-				$begin .= ' echo \' <br/>\';';
+			if( !$resp->is_valid ){
+				echo $z[0]. $resp->error . isset($z[1])?$z[1]:'';
+				return;
 			}
 		}
-		if( $this->data['sendcopytosender']){
-			$begin .= ' if( isset($_POST[\'sendcopytosender\']))';
-			$begin .= '  echo \'<b>'.$this->data['msg_sendcopytosender'].'</b>: '.$this->SCF_LANG['checked'].'<br/>\';';
-			$begin .= ' else';
-			$begin .= '  echo \'<b>'.$this->data['msg_sendcopytosender'].'</b>: '.$this->SCF_LANG['unchecked'].'<br/>\';';
-		}
-		}//end of listing
-		$begin .= "\n";
 
 
-		// validate posted fields - on server
-		$begin .= ' $send = true;';
-		if( strpos($this->items[$this->data['id_sendername']]['valid'],'req')!==false){
-			$begin .= ' if( !isset($_POST["item'.$this->data['id_sendername'].'"]) || $_POST["item'.$this->data['id_sendername'].'"]==\'\')';
-			$begin .= ' {';
-			$begin .= '  printf($langmessage[\'OOPS_REQUIRED\'],\''.$this->items[$this->data['id_sendername']]['label'].'\');';
-			$begin .= '  echo \'<br/>\';';
-			$begin .= '  $send = false;';
-			$begin .= ' }';
+		// validate name
+		$send = true;
+		if( strpos($this->items[$this->data['id_sendername']]['valid'],'req')!==false ){
+			if( !isset($_POST['item'.$this->data['id_sendername']]) || $_POST['item'.$this->data['id_sendername']]=='' ){
+				printf($langmessage['OOPS_REQUIRED'],$this->items[$this->data['id_sendername']]['label']);
+				echo '<br/>';
+				$send = false;
+			}
 		}
-		if( strpos($this->items[$this->data['id_senderemail']]['valid'],'email')!==false){
-			$begin .= ' if( !isset($_POST["item'.$this->data['id_senderemail'].'"]) || $_POST["item'.$this->data['id_senderemail'].'"]==\'\' ';
-			$begin .= '  || !preg_match("/^[_\.0-9a-zA-Z-]+@([0-9a-zA-Z][0-9a-zA-Z-]+\.)+[a-zA-Z]{2,6}$/i", $_POST["item'.$this->data['id_senderemail'].'"]))';
-			$begin .= ' {';
-			$begin .= '  echo $langmessage[\'invalid_email\'].\'<br/>\';';
-			$begin .= '  $send = false;';
-			$begin .= ' }';
+
+		//validate email
+		if( strpos($this->items[$this->data['id_senderemail']]['valid'],'email')!==false ){
+			if( !isset($_POST['item'.$this->data['id_senderemail']]) || $_POST['item'.$this->data['id_senderemail']]==''
+				|| !preg_match("/^[_\.0-9a-zA-Z-]+@([0-9a-zA-Z][0-9a-zA-Z-]+\.)+[a-zA-Z]{2,6}$/i", $_POST['item'.$this->data['id_senderemail']]) ){
+
+					echo $langmessage['invalid_email'].'<br/>';
+					$send = false;
+				}
 		}
+
+		//validate subject
 		if( strpos($this->items[$this->data['id_sendersubject']]['valid'],'req')!==false){
-			$begin .= ' if( !isset($_POST["item'.$this->data['id_sendersubject'].'"]) || $_POST["item'.$this->data['id_sendersubject'].'"]==\'\')';
-			$begin .= ' {';
-			$begin .= '  printf($langmessage[\'OOPS_REQUIRED\'],\''.$this->items[$this->data['id_sendersubject']]['label'].'\');';
-			$begin .= '  echo \'<br/>\';';
-			$begin .= '  $send = false;';
-			$begin .= ' }';
-		}
-		//message will be always checked for emptiness, should be written :
-		//if( strpos($this->items[$this->data['id_sendermessage']]['valid'],'req')!==false)
-		//{
-			$begin .= ' if( !isset($_POST["item'.$this->data['id_sendermessage'].'"]) || $_POST["item'.$this->data['id_sendermessage'].'"]==\'\')';
-			$begin .= ' {';
-			$begin .= '  printf($langmessage[\'OOPS_REQUIRED\'],\''.$this->items[$this->data['id_sendermessage']]['label'].'\');';
-			$begin .= '  echo \'<br/>\';';
-			$begin .= '  $send = false;';
-			$begin .= ' }';
-		//}
-		$begin .= ' if( !$send)';
-		$begin .= ' {';
-		$begin .= '  echo \'<br/><b>'.$this->SCF_LANG['message_not_sent'].'</b> <a href="\'.\common::GetUrl($title).\'" target="_blank">\'.\common::GetLabel($title).\'</a></div>\';';
-		$begin .= '  return;';
-		$begin .= ' }';
-		$begin .= ' $_name = $_POST["item'.$this->data['id_sendername'].'"];';
-		$begin .= ' $_email = $_POST["item'.$this->data['id_senderemail'].'"];';
-		$begin .= ' $_subject = $_POST["item'.$this->data['id_sendersubject'].'"];';
-		$begin .= ' $_message = $_POST["item'.$this->data['id_sendermessage'].'"];';
-		$begin .= ' $_body = \'\';';
-		$begin .= "\n";
-
-		foreach ($this->items as $i => $value){
-			if( $value['type']!='file'){
-				$begin .= '	$_body .= '.$b1.'\''.$value['label'].'\''.$b2.'.\': \';';
+			if( !isset($_POST['item'.$this->data['id_sendersubject']]) || $_POST['item'.$this->data['id_sendersubject']]=='' ){
+				printf($langmessage['OOPS_REQUIRED'],$this->items[$this->data['id_sendersubject']]['label']);
+				echo '<br/>';
+				$send = false;
 			}
+		}
+
+
+		//message will be always checked for emptiness
+		if( !isset($_POST['item'.$this->data['id_sendermessage']]) || $_POST['item'.$this->data['id_sendermessage']]=='' ){
+			printf($langmessage['OOPS_REQUIRED'],$this->items[$this->data['id_sendermessage']]['label']);
+			echo '<br/>';
+			$send = false;
+		}
+
+
+		if( !$send ){
+			echo '<br/><b>'.$this->SCF_LANG['message_not_sent'].'</b> <a href="'.\common::GetUrl($title).'">'.\common::GetLabel($title).'</a></div>';
+			return;
+		}
+
+
+
+
+		$eol	= $this->data['EnableCKE'] ? '<br/>' : "\n";
+		$b1		= $this->data['EnableCKE'] ? '<b>' : '';
+		$b2		= $this->data['EnableCKE'] ? '</b>' : '';
+
+
+		$mailer		= new gp_phpmailer();
+		$mailer->SetLanguage($this->data['Language']);
+
+		if( $this->data['EnableCKE'] ){
+			$mailer->IsHTML(true);
+		}
+
+		$mailer->WordWrap	= $this->data['WordWrap'];
+		$mailer->CharSet	= $this->data['CharSet'];
+
+		$mailer->AddAddress($config['toemail'],$config['toname']); // e-mail address of receiver';
+
+
+		$_name		= $_POST['item'.$this->data['id_sendername']];
+		$_email		= $_POST['item'.$this->data['id_senderemail']];
+		$_subject	= $_POST['item'.$this->data['id_sendersubject']];
+		$_message	= $_POST['item'.$this->data['id_sendermessage']];
+		$_body		= '';
+
+
+		foreach( $this->items as $i => $value ){
+
+			//attachment
+			if( $value['type']=='file'){
+				if( $_FILES['item'.$i]['error'] == 0 ){
+					$mailer->AddAttachment($_FILES['item'.$i]['tmp_name'], $_FILES['item'.$i]['name']);
+				}
+				continue;
+			}
+
+			$_body .= $b1.$value['label'].$b2.': ';
+
 			if( $value['type']=='input' || $value['type']=='radio' || $value['type']=='select' || $value['type']=='textarea'){
-				$begin .= '	if( isset($_POST[\'item'.$i.'\']))';
-				$begin .= '	{';
-			//	if( $value['type']=='textarea' && !$this->data['EnableCKE'])
-			//		$begin .= '		$_POST[\'item'.$i.'\'] = str_replace("\n","<br/>\n",$_POST[\'item'.$i.'\']);';
-				$begin .= '		$_body .= $_POST[\'item'.$i.'\'].'.$eol.';';
-				$begin .= '	}';
-				$begin .= '	else';
-				$begin .= '		$_body .= \'-\'.'.$eol.';';
+
+				if( isset($_POST['item'.$i]) ){
+					$_body .= $_POST['item'.$i];
+				}else{
+					$_body .= '-';
+				}
 			}
+
 			if( $value['type']=='checkbox'){
-				$begin .= '	if( isset($_POST[\'item'.$i.'\']))';
-				$begin .= '		$_body .= \''.$this->SCF_LANG['checked'].'\'.'.$eol.';';
-				$begin .= '	else';
-				$begin .= '		$_body .= \''.$this->SCF_LANG['unchecked'].'\'.'.$eol.';';
+				if( isset($_POST['item'.$i]) ){
+					$_body .= $this->SCF_LANG['checked'];
+				}else{
+					$_body .= $this->SCF_LANG['unchecked'];
+				}
 			}
-			if( $value['type']=='file'){ //attachment
 
-				$begin .= '	if( $_FILES[\'item'.$i.'\'][\'error\']==0)';
-				$begin .= '		$mail->AddAttachment($_FILES[\'item'.$i.'\'][\'tmp_name\'],$_FILES[\'item'.$i.'\'][\'name\']); // attachment';
+			$_body .= $eol;
+
+		}
+
+		//send copy to sender
+		if( $this->data['sendcopytosender'] ){
+			if( isset($_POST['sendcopytosender']) ){
+				$_body .= $eol . $b1 . $this->data['msg_sendcopytosender'] . $b2 . ': '. $this->SCF_LANG['checked'];
+				$mailer->AddBCC($_email,$_name); // blind carbon copy for sender
+			}else{
+				$_body .= $eol . $b1 . $this->data['msg_sendcopytosender'] . $b2 . ': '. $this->SCF_LANG['unchecked'];
+				$mailer->AddReplyTo($_email,$_name);
 			}
 		}
+
+		$mailer->FromName		= $_name; // Sender\'s full name
+		$mailer->From			= $_email; // sender\'s e-mail address
+		$mailer->Return			= $_email; // if email will not be delivered, notice will return here
+		$mail->Subject			= $this->data['msg_presubject'].$_subject;
+		$mail->Body				.= $_body;
+
+		$sent					= $mail->Send();//via smtp or phpmail
+
+		if( $sent ){
+			echo '<br/><br/>'.$this->data['msg_success'];
+			$this->ShowEmailed();
+		}else{
+			echo '<br/><br/>'.$this->data['msg_fail'];
+		}
+		echo '<br/><br/>';
+	}
+
+
+	/**
+	 * Show the user the data that was emailed
+	 *
+	 */
+	function ShowEmailed(){
+
+		if( $this->data['msg_listing']=='' ){
+			return;
+		}
+		echo $this->data['msg_listing'].'<br/>';
+
+		foreach( $this->items as $i => $value ){
+
+			echo '<b>'.$value['label'].':</b> ';
+			if( $value['type']=='input' || $value['type']=='radio' || $value['type']=='select' || $value['type']=='textarea'){
+				if( isset($_POST['item'.$i])){
+					echo $_POST['item'.$i].'<br/>';
+				}else{
+					echo '-<br/>';
+				}
+			}
+
+			if( $value['type']=='checkbox' ){
+				if( isset($_POST['item'.$i]) ){
+					echo $this->SCF_LANG['checked'].'<br/>';
+				}else{
+					echo $this->SCF_LANG['unchecked'].'<br/>';
+				}
+			}
+
+			if( $value['type']=='file'){
+
+				if( $_FILES['item'.$i]['name'] != '' ){
+					echo '<i>'.$_FILES['item'.$i]['name'].'</i>';
+				}else{
+					echo '-';
+				}
+				if( $_FILES['item'.$i]['error']!=0 && $_FILES['item'.$i]['error']!=4 ){
+					echo ' <i>error</i> <a href="http://php.net/manual/en/features.file-upload.errors.php" target="_blank">'.$_FILES['item'.$i]['error'].'</a>';
+					echo '<br/>';
+				}
+			}
+		}
+
 		if( $this->data['sendcopytosender']){
-			$begin .= '	if( isset($_POST[\'sendcopytosender\']))';
-			$begin .= '		$_body .= '.$eol.'.'.$b1.'\''.$this->data['msg_sendcopytosender'].'\''.$b2.'.\': '.$this->SCF_LANG['checked'].'\'.'.$eol.';';
-			$begin .= '	else';
-			$begin .= '		$_body .= '.$eol.'.'.$b1.'\''.$this->data['msg_sendcopytosender'].'\''.$b2.'.\': '.$this->SCF_LANG['unchecked'].'\'.'.$eol.';';
+			if( isset($_POST['sendcopytosender']) ){
+				echo '<b>'.$this->data['msg_sendcopytosender'].'</b>: '.$this->SCF_LANG['checked'].'<br/>';
+			}else{
+				echo '<b>'.$this->data['msg_sendcopytosender'].'</b>: '.$this->SCF_LANG['unchecked'].'<br/>';
+			}
 		}
-		$begin .= '			$mail->AddAddress($config[\'toemail\'],$config[\'toname\']); // e-mail address of receiver';
-		$begin .= '			//$mail->AddAddress("another.mail@another.address.com");  // e-mail address of another receiver..... ';
-		if( $this->data['sendcopytosender']){
-			$begin .= '			if( isset($_POST[\'sendcopytosender\']))';
-			$begin .= '			{';
-			$begin .= '				$mail->AddBCC($_email,$_name); // blind carbon copy for sender';
-			$begin .= '			}';
-			$begin .= '			else';
-			$begin .= '			{';
-			$begin .= '				$mail->AddReplyTo($_email,$_name);';
-			$begin .= '			}';
-		}
-		$begin .= '			$mail->FromName = $_name; // Sender\'s full name';
-		$begin .= '			$mail->From = $_email; // sender\'s e-mail address';
-		$begin .= '			$mail->Return = $_email; // if email will not be delivered, notice will return here';
-		$begin .= '			$mail->Subject = \''.str_replace('\'','\\\'', $this->data['msg_presubject']).'\'.$_subject;';
-		$begin .= '			$mail->Body .= $_body;';
-		$begin .= '			$sent = $mail->Send();//via smtp or phpmail';
-		$begin .= '			if($sent)';
-		$begin .= '				{echo \'<br/><br/>'.str_replace('\'','\\\'', $this->data['msg_success']).'\';}';
-		$begin .= '			else';
-		$begin .= '				{echo \'<br/><br/>'.str_replace('\'','\\\'', $this->data['msg_fail']).'\';}';
-		$begin .= '			echo \'<br/><br/>\';';
-		$begin .= '	  }';
 
-
-
-
-		if( $this->data['aspam']=='rhcapt'){
-			// test reverse honeypot captcha
-			$begin .= '	if( isset($_POST["submitForm"]) && $_POST[\'url\']!=$rhc_string)'; // if antispam field is not ok
-			$begin .= '		{ echo \''.$this->SCF_LANG['spam_detected'].' (Reverse Honeypot Captcha)\';} ';
-		}elseif( $this->data['aspam']=='math' || $this->data['aspam']=='capt'){
-			// test ordinary honeypot captcha
-			$begin .= '	if( isset($_POST["submitForm"]) && $_POST[\'url\']!=\'\')';
-			$begin .= '		{ echo \''.$this->SCF_LANG['spam_detected'].' (Honeypot Captcha)\';} ';
-		}
 	}
 
 
