@@ -139,10 +139,10 @@ namespace Addon\SCF{
 			echo '<span style="color:green">'.$langmessage['recaptcha_public'].':</span> '.$this->keypublic.'<br/>';
 			echo '<span style="color:green">'.$langmessage['recaptcha_private'].':</span> '.$this->keyprivate.'<br/>';
 			echo '<span style="color:green">'.$langmessage['recaptcha_language'].':</span> '.\common::ConfigValue('recaptcha_language','').'<br/><br/>';
-			echo '<span style="color:green">'.$this->SCF_LANG['green_settings'].' '.\common::Link('Admin_Configuration','&#187;','',' name="admin_box" title="'.$langmessage['configuration'].'"').'</span>';
+			echo '<span style="color:green">'.$this->SCF_LANG['green_settings'].' '.\common::Link('Admin_Configuration','&#187;','',' title="'.$langmessage['configuration'].'"').'</span>';
 			echo '<br/><br/>';
 			echo '<input type="submit" name="save_antispams" value="'.$langmessage['save'].'" />'."\n";
-	/*end2*/	echo '</form></div><br/>';
+			echo '</form></div><br/>';
 
 			// begin 3
 			echo '<h3><a data-cmd="ToggleSettings">3. '.$this->SCF_LANG['email_settings'].'</a><hr/></h3>';
@@ -154,23 +154,10 @@ namespace Addon\SCF{
 			echo $this->SCF_LANG['charset'].': <input name="CharSet" type="text" value="'.$this->data['CharSet'].'" /><br/>'."\n";
 			echo '<a href="http://php.net/manual/en/features.file-upload.errors.php" target="_blank">'.$this->SCF_LANG['max_filesize'].'</a>: '.ini_get('upload_max_filesize').'B<br/><br/>'."\n";
 
-			/*
-			echo $langmessage['mail_method'];
-			echo ' : <input id="method1" name="method" type="radio" value="smtp" '.($this->data['method']=='smtp'?'checked="checked"':'').'/> <label for="method1">SMTP server</label> '."\n";
-			echo '<input id="method2" name="method" type="radio" value="mail" '.($this->data['method']=='mail'?'checked="checked"':'').'/> <label for="method2">function mail()</label> '."\n";
-			echo '<input id="method3" name="method" type="radio" value="sendmail" '.($this->data['method']=='sendmail'?'checked="checked"':'').'/> <label for="method3">program sendmail</label> <br/>'."\n";
-			echo $this->SCF_LANG['smtp_use_auth'].' <input name="SMTPAuth" type="checkbox" '.($this->data['SMTPAuth']?'checked="checked"' : '').' /><br/>'."\n";
-			echo $this->SCF_LANG['smtp_host'].': <input name="Host" type="text" value="'.$this->data['Host'].'" /> '."\n";
-			echo '+ '.$this->SCF_LANG['smtp_port'].': <input name="Port" type="text" value="'.$this->data['Port'].'" /><br/>'."\n";
-			echo $this->SCF_LANG['smtp_sec'].': <input name="SMTPSecure" type="text" value="'.$this->data['SMTPSecure'].'" /><br/> '."\n";
-			echo '<span style="color:green">'.$this->SCF_LANG['smtp_user'].'</span> : <input name="Username" type="text" value="'.(isset($config['smtp_user'])&&$config['smtp_user']!=''?$config['smtp_user']:'-').'" /><br/>'."\n";
-			echo '<span style="color:green">'.$this->SCF_LANG['smtp_pass'].'</span> : <input name="Password" type="password" value="'.(isset($config['smtp_pass'])?$config['smtp_pass']:'').'" /><br/>'."\n";
-			echo '<span style="color:green">'.$langmessage['sendmail_path'].'</span> : '.(isset($config['sendmail_path'])?$config['sendmail_path']:$langmessage['default']).'<br/>'."\n";
-			echo '<div style="clear:both;height:1em;"></div>';
-			*/
+			echo '<p style="color:green">The deliver method (smtp, sendmail etc) is set in the '.\common::Link('Admin_Configuration','Typesetter configuration').'</p>';
 
 			echo '<input type="submit" name="save_emailsettings" value="'.$langmessage['save'].'" />'."\n";
-	/*end3*/	echo '</form></div><br/>';
+			echo '</form></div><br/>';
 
 			// begin 4
 			echo '<h3><a data-cmd="ToggleSettings">4. '.$this->SCF_LANG['other'].'</a><hr/></h3>';
