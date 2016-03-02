@@ -416,7 +416,7 @@ class Form{
 		$b2		= $this->data['EnableCKE'] ? '</b>' : '';
 
 
-		$mailer		= new gp_phpmailer();
+		$mailer		= new \gp_phpmailer();
 		$mailer->SetLanguage($this->data['Language']);
 
 		if( $this->data['EnableCKE'] ){
