@@ -428,7 +428,9 @@ class Form{
 		$mailer->WordWrap	= $this->data['WordWrap'];
 		$mailer->CharSet	= $this->data['CharSet'];
 
-		$mailer->AddAddress($config['toemail'],$config['toname']); // e-mail address of receiver';
+		$toname				= isset($config['toname']) ? $config['toname'] : '';
+
+		$mailer->AddAddress($config['toemail'],$toname); // e-mail address of receiver';
 
 
 		$_name		= $_POST['item'.$this->data['id_sendername']];
@@ -485,10 +487,10 @@ class Form{
 		$mailer->FromName		= $_name; // Sender\'s full name
 		$mailer->From			= $_email; // sender\'s e-mail address
 		$mailer->Return			= $_email; // if email will not be delivered, notice will return here
-		$mail->Subject			= $this->data['msg_presubject'].$_subject;
-		$mail->Body				.= $_body;
+		$mailer->Subject		= $this->data['msg_presubject'].$_subject;
+		$mailer->Body			.= $_body;
 
-		$sent					= $mail->Send();//via smtp or phpmail
+		$sent					= $mailer->Send();//via smtp or phpmail
 
 		if( $sent ){
 			echo '<br/><br/>'.$this->data['msg_success'];
