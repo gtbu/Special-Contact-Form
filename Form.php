@@ -4,7 +4,9 @@ namespace Addon\SCF;
 
 defined('is_running') or die('Not an entry point...');
 
+if (!defined('ckDefault')) { 
 define('ckDefault', "toolbar : \n[\n['Bold', 'Italic', 'Underline', '-', 'Undo', 'Redo', '-', 'NumberedList', 'BulletedList', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', '-',\n'Format', '-', 'Link', '-', 'About']\n],\ntoolbarLocation : 'bottom',\ntoolbarStartupExpanded:'true',\nuiColor : '#eeeeee',\nheight:'12em'\n");
+}
 
 class Form{
 
