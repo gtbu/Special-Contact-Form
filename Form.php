@@ -232,7 +232,7 @@ class Form{
 		echo $template;
 
 
-		\gpPlugin::js('form_validator.min.js');
+		\gpPlugin::js('gen_validatorv4.js'); // from https://www.javascript-coder.com/files/form-validation/javascript_form.zip
 
 		$recaptcha_options				= array();
 		$recaptcha_options['lang']		= \common::ConfigValue('recaptcha_language','');
