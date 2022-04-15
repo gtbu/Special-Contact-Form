@@ -18,7 +18,7 @@ namespace Addon\SCF{
 
 		function menu(){
 			global $config, $addonRelativeCode,$page,$langmessage,$languages, $addonPathCode,$addonPathData,$title;
-			$page->head_js[] = $addonRelativeCode.'/jquery.tablednd.0.7.min.js';
+			$page->head_js[] = $addonRelativeCode.'/jquery.tablednd.1.0.5.min.js';
 			$page->head_js[] = $addonRelativeCode.'/javascript.js';
 			$page->head .= '<style type="text/css"> #dataTable tbody tr:hover > td {background-color:#7fff7f;} </style>';
 
