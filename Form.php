@@ -325,7 +325,7 @@ class Form{
 
 		//CKEditor
 		if( $this->data['EnableCKE']){
-			echo '<script type="text/javascript" src="'. \common::GetDir('/include/thirdparty/ckeditor_34/ckeditor.js') .'"></script>';
+			echo '<script type="text/javascript" src="'. \common::GetDir('/include/thirdparty/ckeditor/ckeditor.js') .'"></script>';
 			$page->jQueryCode .= '
 				CKEDITOR.replace( \'item'.$this->data['id_sendermessage'].'\',
 				{
